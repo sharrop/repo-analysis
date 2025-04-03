@@ -1,0 +1,7 @@
+pandas
+matplotlib
+PyGithub
+python-dotenv
+numpy
+tabulate
+plotly
