@@ -1,14 +1,14 @@
-from datetime import datetime
-import matplotlib.pyplot as plt
-from github import Github
 import os
+from datetime import datetime, timezone
+from typing import Dict, List
+
+import argparse  # Add argparse for command-line argument parsing
 import pandas as pd
 from dotenv import load_dotenv
-from typing import List, Dict
-import numpy as np
-from datetime import timezone
+from github import Github
 from tabulate import tabulate
 import plotly.graph_objects as go
+from tqdm import tqdm  # Add tqdm for progress bar
 
 
 load_dotenv()
@@ -30,9 +30,22 @@ def fetch_pull_requests(repo_name):
     pr_list = []
     print(f"Fetched {pull_requests.totalCount} pull requests from {repo_name}")
 
-    for pr in pull_requests:
+    # Use tqdm to display a progress bar
+    for pr in tqdm(pull_requests, desc="Processing Pull Requests", unit="PR"):
         # Compare the PR branch with the main branch
-        comparison = repo.compare(MAIN_BRANCH, pr.head.ref)
+        # This will raise an error if the branches are not comparable
+        # Handle the case where the PR is from a fork
+
+        is_forked = pr.head.repo.fork  # Whether the PR is from a forked repo
+        comparison = None
+        if not is_forked:
+            try:
+                # Check that the named branch exists in this repo, then compare with main dev branch
+                repo.get_branch(pr.head.ref)
+                comparison = repo.compare(MAIN_BRANCH, pr.head.ref)
+            except Exception as e:
+                print(f"PR#{pr.id}: [{pr.title}]\n\tError fetching branch [{pr.head.ref}] - may have come from a forked repo:\n\t{e}")
+
         time_open = datetime.now(timezone.utc) - pr.created_at  # Time open until now
 
         pr_data = {
@@ -52,11 +65,18 @@ def fetch_pull_requests(repo_name):
             "comments": pr.comments,
             "review_comments": pr.review_comments,
             "labels": [label.name for label in pr.labels],
-            "commits_behind_main": comparison.behind_by,
-            "commits_ahead_main": comparison.ahead_by,
+            "num_labels": len(pr.labels),
+            "review_comments": pr.review_comments,
+            "commits_behind_main": comparison.behind_by if comparison else None,
+            "commits_ahead_main": comparison.ahead_by if comparison else None,
             "lines_changed": pr.additions + pr.deletions,  # Total lines changed
             "time_open_days": time_open.days,  # Time open in days
             "is_merged": pr.merged_at is not None,  # Whether the PR is merged
+            "is_forked": is_forked,  # Whether the PR is from a forked repo
+            "source_repo": pr.head.repo.full_name if is_forked else None,  # Source repository name if forked
+            "is_draft": pr.draft,  # Whether the PR is a draft
+            "is_locked": pr.locked,  # Whether the PR is locked
+            "is_needs_qa": any(label.name.lower() == "needs qa" for label in pr.labels),  # Check for needs QA label
         }
         pr_list.append(pr_data)
 
@@ -137,24 +157,36 @@ def main():
     """
     Main function to execute the script.
     """
-    # Ensure required environment variables are set
-    if not GITHUB_TOKEN or not REPO_NAME:
-        print("Error: Missing GITHUB_TOKEN or REPO_NAME in .env file.")
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description="Fetch and analyze GitHub pull requests.")
+    parser.add_argument("--repo", type=str, help="GitHub repository name (e.g., 'owner/repo').")
+    parser.add_argument("--branch", type=str, help="Main branch name to compare against.")
+    parser.add_argument("--csv", type=str, help="CSV file of pull-requests to analyze.")
+    args = parser.parse_args()
+
+    # Override environment variables with command-line arguments if provided
+    repo_name = args.repo if args.repo else REPO_NAME
+    main_branch = args.branch if args.branch else MAIN_BRANCH
+
+    # Ensure required variables are set
+    if not GITHUB_TOKEN:
+        print("Error: Missing GITHUB_TOKEN (via .env file)")
         return
-    else:
-        print("GitHub credentials and repository name loaded successfully.")
-        print(f"Repository: {REPO_NAME}")
-        print(f"Main Branch: {MAIN_BRANCH}")
+
+    print("GitHub credentials and repository name loaded successfully.")
+    print(f"Repository: {repo_name}")
+    print(f"Main Branch: {main_branch}")
 
     # Fetch non-closed pull requests
-    pr_list = fetch_pull_requests(REPO_NAME)
+    pr_list = fetch_pull_requests(repo_name)
 
     # Create a DataFrame
     pr_df = create_dataframe(pr_list)
 
     # Save the DataFrame to a CSV file
-    pr_df.to_csv("open_pull_requests.csv", index=False)
-    print("Open pull requests saved to open_pull_requests.csv")
+    if args.csv:
+        pr_df.to_csv(args.csv, index=False)
+        print(f"Pull requests saved to {args.csv}")
 
     # Visualize the pull requests
     visualize_pull_requests(pr_df)
