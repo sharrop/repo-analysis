@@ -4,7 +4,7 @@ Python Script to analyze pull-requests in a GitHub repo: Pulling PR metadata int
 Instructions:
 Install the required libraries:
 ```
-pip install PyGithub pandas python-dotenv
+pip install -r requirements.txt
 ```
 Update `.env` File:
 ```
