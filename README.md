@@ -1,5 +1,11 @@
 # repo-analysis
 Python Script to analyze pull-requests in a GitHub repo: Pulling PR metadata into a Dataframe
+and visualize them in the hope of deriving a ranking system for "which one to deal with next"
+
+<div style="text-align: center;">
+    <img src="./PR-Analysis.gif" alt="3D Scatter Plot of Pull-Requests">
+</div>
+
 
 Instructions:
 Install the required libraries:
