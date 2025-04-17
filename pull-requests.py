@@ -5,6 +5,8 @@ from typing import Dict, List
 import argparse  # Add argparse for command-line argument parsing
 import pandas as pd
 from dotenv import load_dotenv
+import json
+import requests  # Import requests for HTTP requests
 from github import Github
 from tabulate import tabulate
 import plotly.graph_objects as go
@@ -21,8 +23,22 @@ def fetch_pull_requests(repo_name):
     """
     Fetch all non-closed pull requests from the specified GitHub repository.
     """
+
+    # Configure proxies
+    proxies = {
+        "http": os.getenv("HTTP_PROXY"),
+        "https": os.getenv("HTTPS_PROXY"),
+    }
+
+    # Check if proxies are set
+    if proxies["http"] or proxies["https"]:
+        print(f"Using proxies: {json.dumps(proxies, indent=4)}")
+    else:
+        print("No proxies set.")
+
     # Authenticate with GitHub
     g = Github(GITHUB_TOKEN)
+    
     repo = g.get_repo(repo_name)
 
     # Fetch only open pull requests
