@@ -64,5 +64,5 @@ set HTTPS_PROXY=http://username:password@proxy.company.com:port
 ```
 Or use an explict proxy setting like:
 ```
-pip install -r requirements.txt -- 
+pip install -r requirements.txt --proxy http://[user:passwd@]proxy.server:port
 ```
