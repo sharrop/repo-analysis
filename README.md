@@ -55,3 +55,14 @@ Number of pull requests created by the author (to identify experienced contribut
 Notes:
 Ensure your account/token has the repo scope if the repository is private.
 The script fetches all pull requests (open, closed, and merged) and includes metadata like labels, comments, and file changes.
+
+## Proxy Servers:
+If you have problems with corporate proxy servers, you might try (With `set` in Windows, `export` in Linux/Bash):
+```
+set HTTP_PROXY=http://username:password@proxy.company.com:port
+set HTTPS_PROXY=http://username:password@proxy.company.com:port
+```
+Or use an explict proxy setting like:
+```
+pip install -r requirements.txt -- 
+```
