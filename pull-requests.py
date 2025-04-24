@@ -142,7 +142,7 @@ def visualize_pull_requests(pr_df):
             yaxis_title="Number of Changed Files",
             zaxis_title="Commits Behind Main"
         ),
-        title="Pull Request Complexity (Interactive 3D)",
+        title=f"Pull Request Complexity of {REPO_NAME}",
         margin=dict(l=0, r=0, b=0, t=40)
     )
 
@@ -171,13 +171,21 @@ def create_dataframe(pr_list: List[Dict]) -> pd.DataFrame:
 
 def main():
     """
-    Main function to execute the script.
+    Extract metadata of pull requests related to a GitHub repo (pointed at by environment
+    variable $REPO_NAME or defined by cmd-line '--repo' flag). If $MAIN_BRANCH is SET, it
+    will be used as the main branch to compare against. Otherwise, the default is 'main'.
+
+    You will need to set the environment variable $GITHUB_TOKEN to your GitHub token.
+    This token should have access to the repository you are trying to analyze.
+    
+    The script will fetch all open pull requests, analyze them, and visualize the results.
+    The results will be saved to a CSV file if the '--csv' flag is provided.
     """
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Fetch and analyze GitHub pull requests.")
     parser.add_argument("--repo", type=str, help="GitHub repository name (e.g., 'owner/repo').")
-    parser.add_argument("--branch", type=str, help="Main branch name to compare against.")
-    parser.add_argument("--csv", type=str, help="CSV file of pull-requests to analyze.")
+    parser.add_argument("--branch", type=str, help="Main branch name to compare against (if other than 'main').")
+    parser.add_argument("--csv", type=str, help="Save CSV file of pull-requests.")
     args = parser.parse_args()
 
     # Override environment variables with command-line arguments if provided
